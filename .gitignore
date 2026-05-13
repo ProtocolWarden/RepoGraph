@@ -1,0 +1,21 @@
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Virtual environments and build outputs
+.venv/
+dist/
+build/
+site/
+
+# OS / editor noise
+.DS_Store
+.cache/
+.vscode/
+.idea/
