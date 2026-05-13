@@ -1,0 +1,34 @@
+repo_key: RepoGraph
+src_root: src
+tests_root: tests
+
+audit:
+  cross_repo:
+    platform_manifest_repo: ../PlatformManifest
+
+  exclude_paths:
+    C32:
+      # DisclosureMode.SECRET is a graph disclosure-mode enum value, not a credential.
+      - "src/repograph/ontology/enums.py"
+    T6:
+      # Ontology, projection, topology, and schema modules are exercised through
+      # integration tests (boundary artifact, schema governance) not by direct
+      # name-import in unit test files.
+      - "src/repograph/ontology/**"
+      - "src/repograph/projection/**"
+      - "src/repograph/schema/**"
+      - "src/repograph/topography/**"
+      - "src/repograph/topology/**"
+    T7:
+      - "src/repograph/ontology/**"
+      - "src/repograph/projection/**"
+      - "src/repograph/schema/**"
+      - "src/repograph/topography/**"
+      - "src/repograph/topology/**"
+
+tools:
+  ruff: true
+  vulture: true
+
+privacy:
+  require_boundary_artifact: true

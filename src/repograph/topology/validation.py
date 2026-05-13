@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..errors import RepoGraphConfigError
-from ..ontology.enums import DisclosureMode, RepoVisibility
+from ..ontology.enums import RepoVisibility
 from ..projection.validation import parse_projection_behavior
 from .edges import EdgeKind, RepoEdgeType
 
