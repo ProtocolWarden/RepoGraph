@@ -37,3 +37,8 @@ _Free-form scratch. Clear periodically — old entries can be deleted once no lo
 - RUFF F401: removed unused DisclosureMode import from topology/validation.py.
 - S4: added tests/conftest.py with venv guard.
 - W6: added .hooks/pre-commit with log.md enforcement; ran git config core.hooksPath .hooks.
+
+## 2026-05-13 — Add CLAUDE.md and .custodian/tmp*.yaml to .gitignore
+
+- Added CLAUDE.md to .gitignore
+- Added .custodian/tmp*.yaml to exclude custodian audit temp files
