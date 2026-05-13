@@ -22,8 +22,8 @@ It defines the graph language. It does not own graph instances.
 
 ## Boundary Artifact Flow
 
-1. `PrivateManifest` declares private graph truth using RepoGraph models.
-2. `PrivateManifest` generates boundary disclosure artifacts with RepoGraph semantics.
+1. A source manifest declares graph truth using RepoGraph models.
+2. That manifest generates boundary disclosure artifacts with RepoGraph semantics.
 3. Public repos run `Custodian` with `REPOGRAPH_BOUNDARY_ARTIFACT_FILE`.
 4. `Custodian` validates public surfaces against artifact-derived forbidden names.
 
