@@ -11,6 +11,9 @@ It defines the graph language. It does not own graph instances.
 - boundary disclosure artifact shape and validation
 - shared topography definitions when deployment consumers need them
 
+RepoGraph keeps policy adjacent to semantics, not buried inside config soup.
+See [docs/policy-plane.md](docs/policy-plane.md) for the policy boundary.
+
 ## What It Does Not Own
 
 - private graph data
@@ -27,6 +30,9 @@ It defines the graph language. It does not own graph instances.
 3. The artifact carries schema metadata, provenance, and a payload hash.
 4. Public repos run `Custodian` with `REPOGRAPH_BOUNDARY_ARTIFACT_FILE`.
 5. `Custodian` validates public surfaces against artifact-derived forbidden names.
+
+For the public-safe explorer contract, see
+[docs/repograph-explorer-spec.md](docs/repograph-explorer-spec.md).
 
 ## Schema Governance
 
