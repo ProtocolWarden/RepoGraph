@@ -8,6 +8,7 @@ from repograph import (
     SchemaKind,
     DisclosureMode,
     ProjectionBehavior,
+    ProjectionProfileKind,
     RepoGraph,
     RepoIdentity,
     RepoVisibility,
@@ -113,6 +114,45 @@ def test_repo_graph_diff_detects_visibility_escalation() -> None:
     diff = RepoGraphDiff.compare(before, after, before_ref="before", after_ref="after")
     assert diff.has_high_severity
     assert any(change.kind == "visibility_changed" for change in diff.changes)
+
+
+def test_repo_graph_diff_detects_projection_profile_changes() -> None:
+    graph = _graph()
+    public_projection = build_public_projection(graph, source_graph_id="PrivateManifest")
+    docs_projection = build_public_projection(
+        graph,
+        source_graph_id="PrivateManifest",
+        profile=ProjectionProfileKind.PUBLIC_DOCS,
+    )
+    diff = RepoGraphDiff.compare_public_projection(
+        public_projection,
+        docs_projection,
+        before_ref="public-safe",
+        after_ref="docs",
+    )
+    assert any(change.kind == "projection_profile_changed" for change in diff.changes)
+    assert any(change.kind == "public_projection_changed" for change in diff.changes)
+
+
+def test_repo_graph_diff_detects_boundary_artifact_provenance_changes() -> None:
+    before = build_boundary_artifact(
+        _graph(),
+        source_graph_id="PrivateManifest",
+        source_ref_or_commit="abc123",
+    )
+    after = build_boundary_artifact(
+        _graph(),
+        source_graph_id="PrivateManifest",
+        source_ref_or_commit="def456",
+    )
+    diff = RepoGraphDiff.compare_boundary_artifacts(
+        before,
+        after,
+        before_ref="abc123",
+        after_ref="def456",
+    )
+    assert any(change.kind == "boundary_artifact_provenance_changed" for change in diff.changes)
+    assert any(change.kind == "boundary_artifact_hash_changed" for change in diff.changes)
 
 
 def test_boundary_artifact_validation_rejects_hash_mismatch() -> None:
