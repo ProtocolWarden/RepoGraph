@@ -46,6 +46,9 @@ def test_alias_only_private_repo_projects_as_public_placeholder() -> None:
         ],
     )
     projection = build_public_projection(graph, source_graph_id="PrivateManifest")
+    assert projection.manifest["schema_kind"] == "projection"
+    assert projection.manifest["schema_version"] == "1.0.0"
+    assert projection.manifest["projection_profile"] == "public_safe"
     assert projection.manifest["repos"]["private_impl"]["canonical_name"] == "ManagedProjectPublic"
     assert "repo:private_impl" not in projection.redaction_report
     assert "edge:docs" in projection.redaction_report

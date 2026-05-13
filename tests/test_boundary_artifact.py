@@ -7,6 +7,7 @@ from repograph import (
     RepoIdentity,
     RepoVisibility,
     build_boundary_artifact,
+    compute_artifact_hash,
 )
 
 
@@ -38,7 +39,11 @@ def test_boundary_artifact_forbids_private_names_but_not_public_aliases() -> Non
         source_graph_id="PrivateManifest",
         source_ref_or_commit="abc123",
     )
+    assert artifact.schema_kind == "boundary_artifact"
+    assert artifact.schema_version == "1.0.0"
+    assert artifact.artifact_kind == "boundary_disclosure_artifact"
     assert "PrivateImpl" in artifact.forbidden_names
     assert "private_impl" in artifact.forbidden_names
     assert "ManagedProjectPublic" not in artifact.forbidden_names
     assert "ManagedProjectPublic" in artifact.allowed_aliases
+    assert artifact.artifact_hash == compute_artifact_hash(artifact.core_payload())

@@ -9,7 +9,12 @@ from typing import TYPE_CHECKING, Any
 from ..ontology.enums import DisclosureMode, RepoVisibility
 from ..ontology.models import RepoIdentity
 from .boundary import build_boundary_artifact
-from .models import ProjectionBehavior, PublicGraphProjection
+from .models import (
+    ProjectionBehavior,
+    ProjectionProfileKind,
+    PublicGraphProjection,
+    build_projection_profile,
+)
 from .redaction import public_name
 
 if TYPE_CHECKING:
@@ -101,6 +106,7 @@ def build_public_projection(
     source_graph_id: str,
     source_ref_or_commit: str | None = None,
     manifest_version: str = "1.0.0",
+    profile: ProjectionProfileKind = ProjectionProfileKind.PUBLIC_SAFE,
 ) -> PublicGraphProjection:
     from ..topology.models import RepoGraph
 
@@ -137,6 +143,9 @@ def build_public_projection(
         relationships=relationships,
     )
     manifest = to_public_manifest_dict(projected, manifest_version=manifest_version)
+    manifest["schema_kind"] = "projection"
+    manifest["schema_version"] = build_projection_profile(profile).schema_version
+    manifest["projection_profile"] = profile.value
     boundary = build_boundary_artifact(
         graph,
         source_graph_id=source_graph_id,
@@ -147,6 +156,7 @@ def build_public_projection(
         manifest=manifest,
         redaction_report=tuple(sorted(set(redactions))),
         boundary_artifact=boundary,
+        projection_profile=profile.value,
     )
 
 
@@ -213,6 +223,9 @@ def to_public_manifest_dict(
     ]
 
     return {
+        "schema_kind": "projection",
+        "schema_version": build_projection_profile(ProjectionProfileKind.PUBLIC_SAFE).schema_version,
+        "projection_profile": ProjectionProfileKind.PUBLIC_SAFE.value,
         "manifest_kind": "platform",
         "manifest_version": manifest_version,
         "repos": repos,
