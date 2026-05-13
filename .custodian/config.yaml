@@ -10,6 +10,23 @@ audit:
     C32:
       # DisclosureMode.SECRET is a graph disclosure-mode enum value, not a credential.
       - "src/repograph/ontology/enums.py"
+    D11:
+      # topology/models.py relationship methods (upstream/downstream, from/to) and
+      # diff.py visibility helpers are intentional symmetric APIs, not unintentional clones.
+      - "src/repograph/topology/models.py"
+      - "src/repograph/diff.py"
+      # ontology/validation.py parse_plane/parse_owner_kind are parallel parsers for
+      # distinct enum types; same body shape is expected.
+      - "src/repograph/ontology/validation.py"
+    T1:
+      # Ontology, projection, schema, and topography symbols are the public API surface.
+      # Tests exercise the integration layer; per-symbol unit coverage tracked separately.
+      - "src/repograph/ontology/**"
+      - "src/repograph/projection/**"
+      - "src/repograph/schema/**"
+      - "src/repograph/topography/**"
+      - "src/repograph/topology/**"
+      - "src/repograph/diff.py"
     T6:
       # Ontology, projection, topology, and schema modules are exercised through
       # integration tests (boundary artifact, schema governance) not by direct
@@ -19,12 +36,15 @@ audit:
       - "src/repograph/schema/**"
       - "src/repograph/topography/**"
       - "src/repograph/topology/**"
+      - "src/repograph/errors.py"
     T7:
       - "src/repograph/ontology/**"
       - "src/repograph/projection/**"
       - "src/repograph/schema/**"
       - "src/repograph/topography/**"
       - "src/repograph/topology/**"
+      - "src/repograph/diff.py"
+      - "src/repograph/errors.py"
 
 tools:
   ruff: true

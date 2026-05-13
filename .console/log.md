@@ -23,6 +23,13 @@ _Free-form scratch. Clear periodically — old entries can be deleted once no lo
 
 ---
 
+## 2026-05-13 — Custodian phase 2 — README, CHANGELOG, docs/README, D11/T1/T6/T7 exclusions
+
+- README restructured with What RepoGraph Is/Is Not, Getting Started, Architecture Overview sections.
+- CHANGELOG.md added.
+- docs/README.md added (R6 fix).
+- .custodian/config.yaml: added D11 exclusions for intentional symmetric APIs; T1/T6/T7 exclusions for diff.py and errors.py.
+
 ## 2026-05-13 — Add custodian config and phase 1 fixes
 
 - Added .custodian/config.yaml — first custodian config for this repo.
