@@ -54,7 +54,6 @@ class RepoIdentity:
     public_alias: str | None = None
     aliases: tuple[str, ...] = ()
     description: str | None = None
-    legacy_names: tuple[str, ...] = ()
     github_url: str | None = None
     runtime_role: str | None = None
     kind: EntityKind = EntityKind.REPOSITORY
@@ -113,7 +112,7 @@ class RepoIdentity:
     def all_aliases(self) -> tuple[str, ...]:
         seen: set[str] = set()
         values: list[str] = []
-        for value in (*self.aliases, *self.legacy_names):
+        for value in self.aliases:
             if not value or value in seen:
                 continue
             seen.add(value)

@@ -50,7 +50,6 @@ def _project_node(node: RepoIdentity) -> RepoIdentity:
             public_alias=node.public_alias,
             aliases=(),
             description=node.description,
-            legacy_names=(),
             github_url=node.github_url if node.visibility is RepoVisibility.PUBLIC else None,
             runtime_role=node.runtime_role,
             kind=node.kind,
@@ -79,7 +78,6 @@ def _project_node(node: RepoIdentity) -> RepoIdentity:
         public_alias=node.public_alias,
         aliases=(),
         description=node.description,
-        legacy_names=node.legacy_names,
         github_url=node.github_url,
         runtime_role=node.runtime_role,
         kind=node.kind,
@@ -178,8 +176,6 @@ def to_public_manifest_dict(
         }
         if node.kind.value != "Repository":
             fields["kind"] = node.kind.value
-        if node.legacy_names:
-            fields["legacy_names"] = list(node.legacy_names)
         if node.github_url:
             fields["github_url"] = node.github_url
         if node.runtime_role:
