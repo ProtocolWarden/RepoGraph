@@ -5,3 +5,7 @@
 
 class RepoGraphConfigError(ValueError):
     """Raised when RepoGraph data is invalid."""
+
+
+class AmbiguousAnchorError(RepoGraphConfigError):
+    """Raised when anchor inference matches more than one registered manifest."""

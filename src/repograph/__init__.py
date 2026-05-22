@@ -2,7 +2,14 @@
 # Copyright (C) 2026 ProtocolWarden
 """Shared RepoGraph public API."""
 
-from .errors import RepoGraphConfigError
+from .errors import AmbiguousAnchorError, RepoGraphConfigError
+from .registry import Registry, default_registry_path, discover_manifest_yaml
+from .authorization import (
+    AlsoHostsEntry,
+    AuthorizationView,
+    ManifestRecord,
+    build_authorization_view,
+)
 from .ontology import (
     DisclosureMode,
     EntityKind,
@@ -63,6 +70,14 @@ from .topology import (
 )
 
 __all__ = [
+    "AlsoHostsEntry",
+    "AmbiguousAnchorError",
+    "AuthorizationView",
+    "ManifestRecord",
+    "Registry",
+    "build_authorization_view",
+    "default_registry_path",
+    "discover_manifest_yaml",
     "BoundaryDisclosureArtifact",
     "BreakingChangePolicy",
     "CompatibilityPolicy",

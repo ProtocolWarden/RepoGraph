@@ -1,5 +1,31 @@
 # Log
 
+## 2026-05-22 — P2: manifest registry + authorization API
+
+Branch: `feat/p2-manifest-registry-auth`.
+
+- New `repograph.registry` module: per-machine `manifests.yaml` registry under
+  `${XDG_CONFIG_HOME:-~/.config}/repograph/`, with `REPOGRAPH_REGISTRY` env
+  override for tests. `Registry.add/remove/list/validate`.
+- New `repograph.authorization` module: `AuthorizationView` with three-clause
+  `can_anchor_host(anchor_path, repo_name)` per ADR 0002 P0.4. Builds a thin
+  topology over registered manifests' YAMLs (owner index + also_hosts graph).
+- New top-level manifest fields parsed: `visibility_scope` (public/private),
+  `also_hosts: [{manifest, repos}]`. Backward-compat: scope is derived from
+  `repos[*].visibility` when all-public; otherwise explicit declaration is
+  required.
+- `RepoGraph` extended with `can_anchor_host()`, `find_anchor_for_path()`,
+  and lazy registry self-init via `_ensure_authorization()`. `RepoGraph.build()`
+  preserved for explicit-construction tests.
+- Load-time validations (fatal): dual-ownership across manifests; bad
+  `also_hosts` (manifest, repo) refs; public manifest hosting a non-public
+  repo. Non-fatal warning: redundant `also_hosts` grants pointing at public
+  repos.
+- New `repograph` Typer CLI with `manifest add|remove|list|validate|show`.
+  Added `typer>=0.12` dep + `[project.scripts] repograph = "repograph.cli:app"`.
+- Tests: `tests/test_registry.py`, `tests/test_authorization.py` — 21 new
+  tests, all 38 pass.
+
 ## 2026-05-21 — Add closing fence to console-context block
 
 Added <!-- /console-context --> end marker so OperatorConsole only replaces its
