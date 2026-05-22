@@ -288,3 +288,154 @@ def test_backward_compat_scope_derived_from_repos_visibility(tmp_registry, tmp_p
     Registry.load().add(pm)
     ok, reason = RepoGraph().can_anchor_host(pm, "Alpha")
     assert ok, reason
+
+
+# ---- alias resolution (snake_case key vs canonical_name) -----------------
+
+
+def test_can_anchor_host_accepts_canonical_name(tmp_registry, tmp_path):
+    pm = tmp_path / "PM"
+    pm.mkdir()
+    (pm / "platform_manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "manifest_kind": "platform",
+                "manifest_version": "1.0.0",
+                "visibility_scope": "public",
+                "repos": {
+                    "video_foundry": {"canonical_name": "VideoFoundry", "visibility": "public"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    Registry.load().add(pm)
+    ok, _ = RepoGraph().can_anchor_host(pm, "VideoFoundry")
+    assert ok
+
+
+def test_can_anchor_host_accepts_key_alias(tmp_registry, tmp_path):
+    """Operators may pass the dict-key form (`video_foundry`) instead of canonical."""
+    pm = tmp_path / "PM"
+    pm.mkdir()
+    (pm / "platform_manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "manifest_kind": "platform",
+                "manifest_version": "1.0.0",
+                "visibility_scope": "public",
+                "repos": {
+                    "video_foundry": {"canonical_name": "VideoFoundry", "visibility": "public"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    Registry.load().add(pm)
+    ok, reason = RepoGraph().can_anchor_host(pm, "video_foundry")
+    assert ok, reason
+    # Reason should use canonical name, not the alias the caller passed.
+    assert "VideoFoundry" in reason
+
+
+def test_can_anchor_host_case_insensitive(tmp_registry, tmp_path):
+    pm = tmp_path / "PM"
+    pm.mkdir()
+    (pm / "platform_manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "manifest_kind": "platform",
+                "manifest_version": "1.0.0",
+                "visibility_scope": "public",
+                "repos": {
+                    "alpha": {"canonical_name": "Alpha", "visibility": "public"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    Registry.load().add(pm)
+    # All these forms should resolve to canonical "Alpha".
+    for form in ("Alpha", "alpha", "ALPHA", "AlPhA"):
+        ok, _ = RepoGraph().can_anchor_host(pm, form)
+        assert ok, f"form {form!r} should resolve"
+
+
+def test_alias_block_uses_canonical_name_in_reason(tmp_registry, tmp_path):
+    """When blocking via alias input, reason should still name the canonical repo."""
+    pm = tmp_path / "PM"
+    pm.mkdir()
+    (pm / "platform_manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "manifest_kind": "platform",
+                "manifest_version": "1.0.0",
+                "visibility_scope": "public",
+                "repos": {
+                    "alpha": {"canonical_name": "Alpha", "visibility": "public"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    privm = tmp_path / "PrivM"
+    privm.mkdir()
+    (privm / "private_manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "manifest_kind": "private",
+                "manifest_version": "1.0.0",
+                "visibility_scope": "private",
+                "repos": {
+                    "video_foundry": {"canonical_name": "VideoFoundry", "visibility": "private"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    Registry.load().add(pm)
+    Registry.load().add(privm)
+    # PM anchor + private repo via snake_case alias → blocked, reason names canonical.
+    ok, reason = RepoGraph().can_anchor_host(pm, "video_foundry")
+    assert not ok
+    assert "VideoFoundry" in reason
+    assert "PrivM" in reason
+
+
+def test_alias_conflict_across_manifests_fatal(tmp_registry, tmp_path):
+    """An alias that maps to two different canonicals across manifests is fatal."""
+    pm_a = tmp_path / "PMA"
+    pm_a.mkdir()
+    (pm_a / "platform_manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "manifest_kind": "platform",
+                "manifest_version": "1.0.0",
+                "visibility_scope": "public",
+                "repos": {
+                    "video_foundry": {"canonical_name": "VideoFoundryA", "visibility": "public"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    pm_b = tmp_path / "PMB"
+    pm_b.mkdir()
+    (pm_b / "platform_manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "manifest_kind": "platform",
+                "manifest_version": "1.0.0",
+                "visibility_scope": "public",
+                "repos": {
+                    "video_foundry": {"canonical_name": "VideoFoundryB", "visibility": "public"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    Registry.load().add(pm_a)
+    Registry.load().add(pm_b)
+    from repograph.errors import RepoGraphConfigError
+    with pytest.raises(RepoGraphConfigError, match="globally unique"):
+        RepoGraph().can_anchor_host(pm_a, "VideoFoundryA")

@@ -1,4 +1,20 @@
 # Log
+## 2026-05-22 — can_anchor_host accepts canonical_name OR snake_case key (alias resolution)
+
+Follow-up to e2e test of ADR 0002. Operators naturally refer to repos by either form: `VideoFoundry` (canonical_name) or `videofoundry` (the dict key in PM-style YAML, or just the lowercased canonical). Before this change, only canonical_name resolved; other forms returned "not registered in any manifest", which masked real boundary violations behind a misleading error.
+
+Changes:
+- `ManifestRecord` gains `repo_aliases: dict[str, str]` (lowercased alias → canonical).
+- `AuthorizationView` gains a global `repo_aliases` map merged across all registered manifests.
+- `_iter_repos` now yields `(canonical, fields, aliases)` — for PM-style dict YAML, the dict key is registered as an alias when it differs from canonical_name. Caller signature updated at three call sites.
+- `can_anchor_host` normalizes the input through the global alias map before lookup; reasons always name the canonical form.
+- `also_hosts` validation likewise resolves entries through aliases.
+- Load-time check: alias-to-canonical mapping must be consistent both within a manifest and across registered manifests (fatal if conflict).
+
+5 new tests in `test_authorization.py`: canonical match, alias match, case-insensitive variants, block-reason names canonical even when called via alias, alias conflict fatal. 43/43 passing (was 38).
+
+E2E re-verified: `capture(repos_touched=["videofoundry"])` from a PM anchor now raises BoundaryViolation with the canonical 'VideoFoundry' in the reason, instead of the previous misleading "not registered".
+
 
 ## 2026-05-22 — P2: manifest registry + authorization API
 

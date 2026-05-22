@@ -69,6 +69,12 @@ class ManifestRecord:
     repo_local_paths: dict[str, Path] = field(default_factory=dict)
     """Optional repo_name → local_path mapping (for anchor inference)."""
 
+    repo_aliases: dict[str, str] = field(default_factory=dict)
+    """Lowercased alias → canonical repo name. Includes the canonical name
+    itself (lowercased) and any dict-key form from PM-style YAML. Used by
+    :meth:`AuthorizationView.can_anchor_host` so operators can pass either
+    form (e.g. ``"videofoundry"`` or ``"VideoFoundry"``)."""
+
     @property
     def also_hosts_flattened(self) -> frozenset[str]:
         """All repo names granted via ``also_hosts:`` across entries."""
@@ -83,9 +89,14 @@ class AuthorizationView:
     """Manifest records keyed by canonicalized repo root."""
 
     repo_owner: dict[str, Path]
-    """repo_name → owning manifest repo root."""
+    """canonical repo_name → owning manifest repo root."""
 
-    warnings: list[str]
+    repo_aliases: dict[str, str] = field(default_factory=dict)
+    """Lowercased alias → canonical repo name. Spans every manifest's
+    aliases so :meth:`can_anchor_host` accepts both ``"VideoFoundry"`` and
+    ``"videofoundry"`` (and any other registered form)."""
+
+    warnings: list[str] = field(default_factory=list)
     """Non-fatal validation issues (e.g. redundant also_hosts grants)."""
 
     # ------------------------------------------------------------------
@@ -121,7 +132,10 @@ class AuthorizationView:
                 "Run `repograph manifest add <path>` to register it.",
             )
 
-        owner_root = self.repo_owner.get(repo_name)
+        # Normalize input: accept canonical name OR any registered alias
+        # (case-insensitive). E.g. both "VideoFoundry" and "videofoundry" resolve.
+        canonical = self.repo_aliases.get(repo_name.lower(), repo_name)
+        owner_root = self.repo_owner.get(canonical)
         if owner_root is None:
             return (
                 False,
@@ -131,25 +145,30 @@ class AuthorizationView:
         owner = self.manifests[owner_root]
 
         if owner.root == anchor.root:
-            return True, f"anchor {anchor.name!r} owns repo {repo_name!r}"
+            return True, f"anchor {anchor.name!r} owns repo {canonical!r}"
 
         if owner.visibility_scope == "public":
             return (
                 True,
-                f"repo {repo_name!r} is owned by public manifest {owner.name!r}",
+                f"repo {canonical!r} is owned by public manifest {owner.name!r}",
             )
 
-        if repo_name in anchor.also_hosts_flattened:
+        # also_hosts grants are stored as the names the operator wrote;
+        # normalize both sides through the global alias map to compare.
+        also_canonical = {
+            self.repo_aliases.get(r.lower(), r) for r in anchor.also_hosts_flattened
+        }
+        if canonical in also_canonical:
             return (
                 True,
                 f"anchor {anchor.name!r} has explicit also_hosts grant for "
-                f"{repo_name!r} (owned by private manifest {owner.name!r})",
+                f"{canonical!r} (owned by private manifest {owner.name!r})",
             )
 
         return (
             False,
             f"anchor {anchor.name!r} (scope={anchor.visibility_scope}) cannot host "
-            f"cognition about {repo_name!r}: owned by private manifest {owner.name!r} "
+            f"cognition about {canonical!r}: owned by private manifest {owner.name!r} "
             "with no `also_hosts` grant to this anchor.",
         )
 
@@ -171,6 +190,7 @@ def build_authorization_view(manifest_roots: list[Path]) -> AuthorizationView:
     """
     records_by_root: dict[Path, ManifestRecord] = {}
     repo_owner: dict[str, Path] = {}
+    repo_aliases: dict[str, str] = {}
     warnings: list[str] = []
 
     # First pass: build per-manifest records.
@@ -183,7 +203,7 @@ def build_authorization_view(manifest_roots: list[Path]) -> AuthorizationView:
         record = _parse_manifest_root(root)
         records_by_root[root] = record
 
-    # Second pass: enforce exactly-one-owner.
+    # Second pass: enforce exactly-one-owner + merge alias maps.
     for root, record in records_by_root.items():
         for repo_name in record.repos:
             prior = repo_owner.get(repo_name)
@@ -194,8 +214,18 @@ def build_authorization_view(manifest_roots: list[Path]) -> AuthorizationView:
                     f"{prior_name!r} and {record.name!r}. Exactly one owner required."
                 )
             repo_owner[repo_name] = root
+        for alias, canonical in record.repo_aliases.items():
+            prior_canonical = repo_aliases.get(alias)
+            if prior_canonical is not None and prior_canonical != canonical:
+                raise RepoGraphConfigError(
+                    f"alias {alias!r} maps to both {prior_canonical!r} and "
+                    f"{canonical!r} across registered manifests. Aliases must "
+                    "be globally unique."
+                )
+            repo_aliases[alias] = canonical
 
     # Third pass: validate also_hosts refs + redundant-grant warnings.
+    # also_hosts.repos may use canonical or alias forms — resolve via target's aliases.
     name_to_root: dict[str, Path] = {r.name.lower(): root for root, r in records_by_root.items()}
     for root, record in records_by_root.items():
         for entry in record.also_hosts:
@@ -208,7 +238,9 @@ def build_authorization_view(manifest_roots: list[Path]) -> AuthorizationView:
                 )
             target_record = records_by_root[target_root]
             for repo_name in entry.repos:
-                if repo_name not in target_record.repos:
+                # Resolve via target's aliases (accepts canonical or key form).
+                canonical = target_record.repo_aliases.get(repo_name.lower(), repo_name)
+                if canonical not in target_record.repos:
                     raise RepoGraphConfigError(
                         f"manifest {record.name!r} also_hosts references "
                         f"repo {repo_name!r} not owned by {entry.manifest!r}. "
@@ -224,6 +256,7 @@ def build_authorization_view(manifest_roots: list[Path]) -> AuthorizationView:
     return AuthorizationView(
         manifests=records_by_root,
         repo_owner=repo_owner,
+        repo_aliases=repo_aliases,
         warnings=warnings,
     )
 
@@ -252,13 +285,24 @@ def _parse_manifest_root(root: Path) -> ManifestRecord:
     repos_seen: set[str] = set()
     also_hosts: list[AlsoHostsEntry] = []
     repo_local_paths: dict[str, Path] = {}
+    repo_aliases: dict[str, str] = {}
+
+    def _register_alias(alias: str, canonical: str) -> None:
+        lower = alias.lower()
+        prior = repo_aliases.get(lower)
+        if prior is not None and prior != canonical:
+            raise RepoGraphConfigError(
+                f"manifest at {root}: alias {alias!r} maps to both "
+                f"{prior!r} and {canonical!r}. Aliases must be unique."
+            )
+        repo_aliases[lower] = canonical
 
     for path, raw in docs:
         scope = _extract_scope(raw, path)
         if scope is not None:
             scopes.add(scope)
 
-        for repo_name, fields in _iter_repos(raw, path):
+        for repo_name, fields, aliases in _iter_repos(raw, path):
             if repo_name in repos_seen:
                 continue
             repos_seen.add(repo_name)
@@ -266,6 +310,10 @@ def _parse_manifest_root(root: Path) -> ManifestRecord:
             local = _opt_local_path(fields)
             if local is not None:
                 repo_local_paths[repo_name] = local
+            # Register both canonical and any aliases (lowercased).
+            _register_alias(repo_name, repo_name)
+            for alias in aliases:
+                _register_alias(alias, repo_name)
 
         for entry in _extract_also_hosts(raw, path):
             also_hosts.append(entry)
@@ -297,7 +345,7 @@ def _parse_manifest_root(root: Path) -> ManifestRecord:
 
     # Per-repo visibility must agree with manifest scope (when declared).
     for path, raw in docs:
-        for repo_name, fields in _iter_repos(raw, path):
+        for repo_name, fields, _aliases in _iter_repos(raw, path):
             vis = fields.get("visibility") if isinstance(fields, dict) else None
             if vis is None:
                 continue
@@ -317,6 +365,7 @@ def _parse_manifest_root(root: Path) -> ManifestRecord:
         repos=tuple(repos),
         also_hosts=tuple(also_hosts),
         repo_local_paths=repo_local_paths,
+        repo_aliases=repo_aliases,
     )
 
 
@@ -335,7 +384,7 @@ def _derive_scope_from_repos(docs: list[tuple[Path, dict]]) -> str | None:
     saw_any = False
     all_public = True
     for _path, raw in docs:
-        for _, fields in _iter_repos(raw, _path):
+        for _name, fields, _aliases in _iter_repos(raw, _path):
             saw_any = True
             vis = fields.get("visibility") if isinstance(fields, dict) else None
             if vis != "public":
@@ -346,6 +395,12 @@ def _derive_scope_from_repos(docs: list[tuple[Path, dict]]) -> str | None:
 
 
 def _iter_repos(raw: dict, path: Path):
+    """Yield ``(canonical_name, fields, aliases)`` for every repo entry.
+
+    ``aliases`` is a list of additional names that operators commonly
+    use to refer to this repo (the dict-key form for PM-style YAML, etc).
+    Empty if no additional aliases.
+    """
     repos_raw = raw.get("repos")
     if repos_raw is None:
         return
@@ -355,17 +410,22 @@ def _iter_repos(raw: dict, path: Path):
             if not isinstance(fields, dict):
                 # Skip ill-typed entries; upstream loaders will reject.
                 continue
-            name = fields.get("canonical_name") or str(repo_id)
-            yield str(name), fields
+            canonical = fields.get("canonical_name") or str(repo_id)
+            aliases = [str(repo_id)] if str(repo_id) != str(canonical) else []
+            yield str(canonical), fields, aliases
     elif isinstance(repos_raw, list):
         # P0.4-style: [{name: X}, ...]
         for item in repos_raw:
             if isinstance(item, dict):
                 name = item.get("name") or item.get("canonical_name")
                 if name:
-                    yield str(name), item
+                    aliases = []
+                    alt = item.get("canonical_name") if item.get("name") else None
+                    if alt and alt != name:
+                        aliases.append(str(alt))
+                    yield str(name), item, aliases
             elif isinstance(item, str):
-                yield item, {}
+                yield item, {}, []
     else:
         raise RepoGraphConfigError(
             f"{path}: 'repos' must be a mapping or a list"
