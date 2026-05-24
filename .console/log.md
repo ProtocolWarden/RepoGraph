@@ -1,4 +1,15 @@
 # Log
+## 2026-05-23 — Custodian guard to zero + pre-push hook onboarded
+
+Drove `custodian-multi` from 30 findings to `0 findings | clean` on branch `chore/custodian-clean`.
+
+- C13: `registry.py` resolves the registry path from `REPOGRAPH_REGISTRY` / `XDG_CONFIG_HOME`; it IS the config/env-access layer, so added it to `c13_allowed_paths` (rationale in config). No code change.
+- RUFF: removed unused `default_registry_path` import (F401) and a placeholder-free f-string (F541) in `cli.py`.
+- B1 (PUBLIC repo): the illustrative `VideoFoundry`/`videofoundry`/`video_foundry` (+ `VideoFoundryA/B`) example names in `authorization.py` docstrings and `tests/test_authorization.py` are now forbidden by the boundary artifact. Genericized to the neutral placeholder `MediaForge` (and `mediaforge`/`media_forge`/`MediaForgeA/B`), preserving the alias-resolution semantics each test asserts. Repo's own name "RepoGraph" is not forbidden, so no privacy exclude needed.
+- T1/T6/T7: wrote genuine unit tests rather than over-excluding — `tests/test_authorization_models.py` (direct-import coverage of `AlsoHostsEntry`/`ManifestRecord`/`AuthorizationView`), `tests/test_cli.py` (CliRunner coverage of all `manifest_*` commands), and appended registry-discovery tests to `tests/test_registry.py` (`discover_manifest_yaml`, `discover_all_manifest_yamls`, `iter_yaml_documents`). `cli.py` added to T1 exclude only because T1 keys on the python symbol name while CliRunner invokes commands by CLI string ("manifest add"); behaviour is fully tested.
+- Hooks: added `.hooks/pre-push` (custodian regression guard, fail-closed on missing boundary artifact); `pre-commit` already present. `core.hooksPath` set to `.hooks`.
+- 61 tests pass; audit clean.
+
 ## 2026-05-22 — can_anchor_host accepts canonical_name OR snake_case key (alias resolution)
 
 Follow-up to e2e test of ADR 0002. Operators naturally refer to repos by either form: `VideoFoundry` (canonical_name) or `videofoundry` (the dict key in PM-style YAML, or just the lowercased canonical). Before this change, only canonical_name resolved; other forms returned "not registered in any manifest", which masked real boundary violations behind a misleading error.

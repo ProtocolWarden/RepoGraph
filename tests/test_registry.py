@@ -124,3 +124,71 @@ def test_registry_remove_nonexistent_errors(registry_env, tmp_path):
 def test_registry_add_missing_path_errors(registry_env, tmp_path):
     result = runner.invoke(app, ["manifest", "add", str(tmp_path / "ghost")])
     assert result.exit_code == 1
+
+
+# ---- manifest YAML discovery helpers --------------------------------------
+
+
+def test_discover_manifest_yaml_finds_by_glob_priority(tmp_path):
+    from repograph.registry import discover_manifest_yaml
+
+    root = tmp_path / "M"
+    root.mkdir()
+    # Both a top-level and a nested candidate exist; glob order prefers the
+    # top-level platform_manifest.yaml.
+    (root / "platform_manifest.yaml").write_text("repos: []\n", encoding="utf-8")
+    nested = root / "manifests"
+    nested.mkdir()
+    (nested / "other.yaml").write_text("repos: []\n", encoding="utf-8")
+
+    hit = discover_manifest_yaml(root)
+    assert hit == root / "platform_manifest.yaml"
+
+
+def test_discover_manifest_yaml_returns_none_when_absent(tmp_path):
+    from repograph.registry import discover_manifest_yaml
+
+    root = tmp_path / "empty"
+    root.mkdir()
+    assert discover_manifest_yaml(root) is None
+
+
+def test_discover_all_manifest_yamls_collects_and_dedupes(tmp_path):
+    from repograph.registry import discover_all_manifest_yamls
+
+    root = tmp_path / "M"
+    nested = root / "manifests"
+    nested.mkdir(parents=True)
+    (root / "private_manifest.yaml").write_text("repos: []\n", encoding="utf-8")
+    (nested / "a.yaml").write_text("repos: []\n", encoding="utf-8")
+    (nested / "b.yaml").write_text("repos: []\n", encoding="utf-8")
+
+    found = discover_all_manifest_yamls(root)
+    # All three discovered, resolved, no duplicates.
+    assert len(found) == len(set(found)) == 3
+    names = {p.name for p in found}
+    assert names == {"private_manifest.yaml", "a.yaml", "b.yaml"}
+
+
+def test_iter_yaml_documents_skips_non_mappings(tmp_path):
+    from repograph.registry import iter_yaml_documents
+
+    mapping = tmp_path / "ok.yaml"
+    mapping.write_text("repos: []\n", encoding="utf-8")
+    sequence = tmp_path / "list.yaml"
+    sequence.write_text("- a\n- b\n", encoding="utf-8")
+
+    docs = iter_yaml_documents([mapping, sequence])
+    assert len(docs) == 1
+    path, raw = docs[0]
+    assert path == mapping
+    assert raw == {"repos": []}
+
+
+def test_iter_yaml_documents_raises_on_bad_yaml(tmp_path):
+    from repograph.registry import iter_yaml_documents
+
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("key: : :\n  - broken\n", encoding="utf-8")
+    with pytest.raises(RepoGraphConfigError, match="parse error"):
+        iter_yaml_documents([bad])

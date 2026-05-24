@@ -19,7 +19,7 @@ import typer
 
 from .authorization import build_authorization_view
 from .errors import RepoGraphConfigError
-from .registry import Registry, default_registry_path
+from .registry import Registry
 
 app = typer.Typer(
     name="repograph",
@@ -128,7 +128,7 @@ def manifest_show(
     typer.echo(f"name: {record.name}")
     typer.echo(f"root: {record.root}")
     typer.echo(f"visibility_scope: {record.visibility_scope}")
-    typer.echo(f"yaml_files:")
+    typer.echo("yaml_files:")
     for y in record.yaml_paths:
         typer.echo(f"  - {y}")
     typer.echo(f"repos ({len(record.repos)}):")

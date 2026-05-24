@@ -73,7 +73,7 @@ class ManifestRecord:
     """Lowercased alias → canonical repo name. Includes the canonical name
     itself (lowercased) and any dict-key form from PM-style YAML. Used by
     :meth:`AuthorizationView.can_anchor_host` so operators can pass either
-    form (e.g. ``"videofoundry"`` or ``"VideoFoundry"``)."""
+    form (e.g. ``"mediaforge"`` or ``"MediaForge"``)."""
 
     @property
     def also_hosts_flattened(self) -> frozenset[str]:
@@ -93,8 +93,8 @@ class AuthorizationView:
 
     repo_aliases: dict[str, str] = field(default_factory=dict)
     """Lowercased alias → canonical repo name. Spans every manifest's
-    aliases so :meth:`can_anchor_host` accepts both ``"VideoFoundry"`` and
-    ``"videofoundry"`` (and any other registered form)."""
+    aliases so :meth:`can_anchor_host` accepts both ``"MediaForge"`` and
+    ``"mediaforge"`` (and any other registered form)."""
 
     warnings: list[str] = field(default_factory=list)
     """Non-fatal validation issues (e.g. redundant also_hosts grants)."""
@@ -133,7 +133,7 @@ class AuthorizationView:
             )
 
         # Normalize input: accept canonical name OR any registered alias
-        # (case-insensitive). E.g. both "VideoFoundry" and "videofoundry" resolve.
+        # (case-insensitive). E.g. both "MediaForge" and "mediaforge" resolve.
         canonical = self.repo_aliases.get(repo_name.lower(), repo_name)
         owner_root = self.repo_owner.get(canonical)
         if owner_root is None:
