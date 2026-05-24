@@ -6,6 +6,12 @@ audit:
   cross_repo:
     platform_manifest_repo: ../PlatformManifest
 
+  # registry.py IS the config layer: it resolves the per-machine registry
+  # location from REPOGRAPH_REGISTRY / XDG_CONFIG_HOME. Reading those env
+  # vars here is the legitimate single point of env access, not a leak.
+  c13_allowed_paths:
+    - "src/repograph/registry.py"
+
   exclude_paths:
     C32:
       # DisclosureMode.SECRET is a graph disclosure-mode enum value, not a credential.
@@ -27,6 +33,11 @@ audit:
       - "src/repograph/topography/**"
       - "src/repograph/topology/**"
       - "src/repograph/diff.py"
+      # cli.py is a thin typer entrypoint: each manifest_* command is exercised
+      # end-to-end via CliRunner in tests/test_cli.py, but T1 keys on the
+      # symbol *name* and CliRunner invokes commands by their CLI string
+      # ("manifest add") rather than the python function name.
+      - "src/repograph/cli.py"
     T6:
       # Ontology, projection, topology, and schema modules are exercised through
       # integration tests (boundary artifact, schema governance) not by direct

@@ -303,19 +303,19 @@ def test_can_anchor_host_accepts_canonical_name(tmp_registry, tmp_path):
                 "manifest_version": "1.0.0",
                 "visibility_scope": "public",
                 "repos": {
-                    "video_foundry": {"canonical_name": "VideoFoundry", "visibility": "public"},
+                    "media_forge": {"canonical_name": "MediaForge", "visibility": "public"},
                 },
             }
         ),
         encoding="utf-8",
     )
     Registry.load().add(pm)
-    ok, _ = RepoGraph().can_anchor_host(pm, "VideoFoundry")
+    ok, _ = RepoGraph().can_anchor_host(pm, "MediaForge")
     assert ok
 
 
 def test_can_anchor_host_accepts_key_alias(tmp_registry, tmp_path):
-    """Operators may pass the dict-key form (`video_foundry`) instead of canonical."""
+    """Operators may pass the dict-key form (`media_forge`) instead of canonical."""
     pm = tmp_path / "PM"
     pm.mkdir()
     (pm / "platform_manifest.yaml").write_text(
@@ -325,17 +325,17 @@ def test_can_anchor_host_accepts_key_alias(tmp_registry, tmp_path):
                 "manifest_version": "1.0.0",
                 "visibility_scope": "public",
                 "repos": {
-                    "video_foundry": {"canonical_name": "VideoFoundry", "visibility": "public"},
+                    "media_forge": {"canonical_name": "MediaForge", "visibility": "public"},
                 },
             }
         ),
         encoding="utf-8",
     )
     Registry.load().add(pm)
-    ok, reason = RepoGraph().can_anchor_host(pm, "video_foundry")
+    ok, reason = RepoGraph().can_anchor_host(pm, "media_forge")
     assert ok, reason
     # Reason should use canonical name, not the alias the caller passed.
-    assert "VideoFoundry" in reason
+    assert "MediaForge" in reason
 
 
 def test_can_anchor_host_case_insensitive(tmp_registry, tmp_path):
@@ -387,7 +387,7 @@ def test_alias_block_uses_canonical_name_in_reason(tmp_registry, tmp_path):
                 "manifest_version": "1.0.0",
                 "visibility_scope": "private",
                 "repos": {
-                    "video_foundry": {"canonical_name": "VideoFoundry", "visibility": "private"},
+                    "media_forge": {"canonical_name": "MediaForge", "visibility": "private"},
                 },
             }
         ),
@@ -396,9 +396,9 @@ def test_alias_block_uses_canonical_name_in_reason(tmp_registry, tmp_path):
     Registry.load().add(pm)
     Registry.load().add(privm)
     # PM anchor + private repo via snake_case alias → blocked, reason names canonical.
-    ok, reason = RepoGraph().can_anchor_host(pm, "video_foundry")
+    ok, reason = RepoGraph().can_anchor_host(pm, "media_forge")
     assert not ok
-    assert "VideoFoundry" in reason
+    assert "MediaForge" in reason
     assert "PrivM" in reason
 
 
@@ -413,7 +413,7 @@ def test_alias_conflict_across_manifests_fatal(tmp_registry, tmp_path):
                 "manifest_version": "1.0.0",
                 "visibility_scope": "public",
                 "repos": {
-                    "video_foundry": {"canonical_name": "VideoFoundryA", "visibility": "public"},
+                    "media_forge": {"canonical_name": "MediaForgeA", "visibility": "public"},
                 },
             }
         ),
@@ -428,7 +428,7 @@ def test_alias_conflict_across_manifests_fatal(tmp_registry, tmp_path):
                 "manifest_version": "1.0.0",
                 "visibility_scope": "public",
                 "repos": {
-                    "video_foundry": {"canonical_name": "VideoFoundryB", "visibility": "public"},
+                    "media_forge": {"canonical_name": "MediaForgeB", "visibility": "public"},
                 },
             }
         ),
@@ -438,4 +438,4 @@ def test_alias_conflict_across_manifests_fatal(tmp_registry, tmp_path):
     Registry.load().add(pm_b)
     from repograph.errors import RepoGraphConfigError
     with pytest.raises(RepoGraphConfigError, match="globally unique"):
-        RepoGraph().can_anchor_host(pm_a, "VideoFoundryA")
+        RepoGraph().can_anchor_host(pm_a, "MediaForgeA")
