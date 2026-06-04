@@ -45,7 +45,7 @@ def test_alias_only_private_repo_projects_as_public_placeholder() -> None:
             )
         ],
     )
-    projection = build_public_projection(graph, source_graph_id="PrivateManifest")
+    projection = build_public_projection(graph, source_graph_id="private-manifest-fixture")
     assert projection.manifest["schema_kind"] == "projection"
     assert projection.manifest["schema_version"] == "1.0.0"
     assert projection.manifest["projection_profile"] == "public_safe"

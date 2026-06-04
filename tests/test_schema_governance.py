@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from repograph import (
-    BoundaryDisclosureArtifact,
     RepoGraphConfigError,
     SchemaKind,
     DisclosureMode,
@@ -60,7 +59,7 @@ def test_schema_versions_are_explicit_and_supported() -> None:
 def test_boundary_artifact_contains_schema_and_hash() -> None:
     artifact = build_boundary_artifact(
         _graph(),
-        source_graph_id="PrivateManifest",
+        source_graph_id="private-manifest-fixture",
         source_ref_or_commit="abc123",
     )
     data = artifact.to_dict()
@@ -71,7 +70,7 @@ def test_boundary_artifact_contains_schema_and_hash() -> None:
 
 
 def test_projection_manifest_includes_schema_metadata() -> None:
-    projection = build_public_projection(_graph(), source_graph_id="PrivateManifest")
+    projection = build_public_projection(_graph(), source_graph_id="private-manifest-fixture")
     assert projection.manifest["schema_kind"] == "projection"
     assert projection.manifest["schema_version"] == "1.0.0"
     assert projection.manifest["projection_profile"] == "public_safe"
@@ -118,10 +117,10 @@ def test_repo_graph_diff_detects_visibility_escalation() -> None:
 
 def test_repo_graph_diff_detects_projection_profile_changes() -> None:
     graph = _graph()
-    public_projection = build_public_projection(graph, source_graph_id="PrivateManifest")
+    public_projection = build_public_projection(graph, source_graph_id="private-manifest-fixture")
     docs_projection = build_public_projection(
         graph,
-        source_graph_id="PrivateManifest",
+        source_graph_id="private-manifest-fixture",
         profile=ProjectionProfileKind.PUBLIC_DOCS,
     )
     diff = RepoGraphDiff.compare_public_projection(
@@ -137,12 +136,12 @@ def test_repo_graph_diff_detects_projection_profile_changes() -> None:
 def test_repo_graph_diff_detects_boundary_artifact_provenance_changes() -> None:
     before = build_boundary_artifact(
         _graph(),
-        source_graph_id="PrivateManifest",
+        source_graph_id="private-manifest-fixture",
         source_ref_or_commit="abc123",
     )
     after = build_boundary_artifact(
         _graph(),
-        source_graph_id="PrivateManifest",
+        source_graph_id="private-manifest-fixture",
         source_ref_or_commit="def456",
     )
     diff = RepoGraphDiff.compare_boundary_artifacts(
@@ -158,7 +157,7 @@ def test_repo_graph_diff_detects_boundary_artifact_provenance_changes() -> None:
 def test_boundary_artifact_validation_rejects_hash_mismatch() -> None:
     artifact = build_boundary_artifact(
         _graph(),
-        source_graph_id="PrivateManifest",
+        source_graph_id="private-manifest-fixture",
         source_ref_or_commit="abc123",
     )
     payload = artifact.to_dict()
@@ -170,13 +169,13 @@ def test_boundary_artifact_validation_rejects_hash_mismatch() -> None:
 def test_boundary_artifact_validation_rejects_signature_without_verifier() -> None:
     artifact = build_boundary_artifact(
         _graph(),
-        source_graph_id="PrivateManifest",
+        source_graph_id="private-manifest-fixture",
         source_ref_or_commit="abc123",
     )
     payload = artifact.to_dict()
     payload["signature"] = "signed"
     payload["signature_algorithm"] = "ed25519"
-    payload["issuer"] = "PrivateManifest"
+    payload["issuer"] = "private-manifest-fixture"
     payload["signed_at"] = "2026-05-13T00:00:00Z"
     with pytest.raises(RepoGraphConfigError):
         validate_boundary_artifact_payload(payload)
