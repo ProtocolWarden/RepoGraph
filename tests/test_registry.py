@@ -192,3 +192,63 @@ def test_iter_yaml_documents_raises_on_bad_yaml(tmp_path):
     bad.write_text("key: : :\n  - broken\n", encoding="utf-8")
     with pytest.raises(RepoGraphConfigError, match="parse error"):
         iter_yaml_documents([bad])
+
+
+# ----------------------------------------------------------------------
+# resolve_private_manifest — the shared private-manifest *role* resolver
+# ----------------------------------------------------------------------
+
+
+def test_resolve_private_manifest_env_override(tmp_path, monkeypatch):
+    from repograph.registry import resolve_private_manifest
+
+    privm = tmp_path / "AnyName"
+    privm.mkdir()
+    monkeypatch.setenv("PRIVATE_MANIFEST_DIR", str(privm))
+    assert resolve_private_manifest() == privm.resolve()
+
+
+def test_resolve_private_manifest_env_bogus_returns_none(tmp_path, monkeypatch):
+    from repograph.registry import resolve_private_manifest
+
+    monkeypatch.setenv("PRIVATE_MANIFEST_DIR", str(tmp_path / "missing"))
+    assert resolve_private_manifest() is None
+
+
+def test_resolve_private_manifest_via_registry(registry_env, tmp_path, monkeypatch):
+    from repograph.registry import resolve_private_manifest
+
+    monkeypatch.delenv("PRIVATE_MANIFEST_DIR", raising=False)
+    pm = tmp_path / "PublicSide"
+    _write_public_manifest(pm, "PM", ["pubA"])
+    # The private repo's NAME is arbitrary — resolution matches the manifest
+    # type filename (private_manifest*), never a repo-instance name.
+    privm = tmp_path / "ArbitraryPrivateRepoName"
+    _write_private_manifest(privm, "PrivM", ["privA"])
+    reg = Registry.load()
+    reg.add(pm)
+    reg.add(privm)
+    reg.save()
+
+    assert resolve_private_manifest() == privm.resolve()
+
+
+def test_resolve_private_manifest_none_when_no_private(registry_env, tmp_path, monkeypatch):
+    from repograph.registry import resolve_private_manifest
+
+    monkeypatch.delenv("PRIVATE_MANIFEST_DIR", raising=False)
+    pm = tmp_path / "PublicOnly"
+    _write_public_manifest(pm, "PM", ["pubA"])
+    reg = Registry.load()
+    reg.add(pm)
+    reg.save()
+
+    assert resolve_private_manifest() is None
+
+
+def test_resolve_private_manifest_none_when_registry_missing(registry_env, monkeypatch):
+    from repograph.registry import resolve_private_manifest
+
+    monkeypatch.delenv("PRIVATE_MANIFEST_DIR", raising=False)
+    # registry_env points at a nonexistent file → empty registry, no private root.
+    assert resolve_private_manifest() is None

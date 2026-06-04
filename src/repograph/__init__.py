@@ -3,7 +3,12 @@
 """Shared RepoGraph public API."""
 
 from .errors import AmbiguousAnchorError, RepoGraphConfigError
-from .registry import Registry, default_registry_path, discover_manifest_yaml
+from .registry import (
+    Registry,
+    default_registry_path,
+    discover_manifest_yaml,
+    resolve_private_manifest,
+)
 from .authorization import (
     AlsoHostsEntry,
     AuthorizationView,
@@ -78,6 +83,7 @@ __all__ = [
     "build_authorization_view",
     "default_registry_path",
     "discover_manifest_yaml",
+    "resolve_private_manifest",
     "BoundaryDisclosureArtifact",
     "BreakingChangePolicy",
     "CompatibilityPolicy",

@@ -11,8 +11,8 @@ Default location: ``${XDG_CONFIG_HOME:-~/.config}/repograph/manifests.yaml``.
 Schema::
 
     manifests:
-      - /home/dev/Documents/GitHub/PlatformManifest
-      - /home/dev/Documents/GitHub/PrivateManifest
+      - /path/to/PlatformManifest
+      - /path/to/<your-private-manifest-repo>
 """
 
 from __future__ import annotations
@@ -197,9 +197,8 @@ def discover_manifest_yaml(repo_root: Path) -> Path | None:
 def discover_all_manifest_yamls(repo_root: Path) -> list[Path]:
     """Return all manifest YAMLs under a manifest repo root (in glob order).
 
-    A single private manifest repo (e.g. PrivateManifest) may host more than
-    one manifest YAML (e.g. one per managed project). Authorization needs all
-    of them.
+    A single private manifest repo may host more than one manifest YAML
+    (e.g. one per managed project). Authorization needs all of them.
     """
     seen: set[Path] = set()
     results: list[Path] = []
@@ -213,6 +212,49 @@ def discover_all_manifest_yamls(repo_root: Path) -> list[Path]:
             seen.add(resolved)
             results.append(resolved)
     return results
+
+
+# ----------------------------------------------------------------------
+# Private-manifest role resolution
+# ----------------------------------------------------------------------
+
+_PRIVATE_MANIFEST_ENV = "PRIVATE_MANIFEST_DIR"
+_PRIVATE_MANIFEST_PREFIX = "private_manifest"
+
+
+def resolve_private_manifest(registry: "Registry | None" = None) -> Path | None:
+    """Resolve the active private-manifest repo root, or ``None``.
+
+    The platform references the private-manifest *role*, never a baked-in
+    repo-instance name. Resolution order:
+
+    1. ``$PRIVATE_MANIFEST_DIR`` — explicit operator override (must be an
+       existing directory; a set-but-bogus value resolves to ``None`` rather
+       than silently falling through to discovery).
+    2. Registry discovery — the first registered manifest repo root hosting
+       any manifest YAML whose basename starts with ``private_manifest``
+       (matched on the manifest *type* filename, never a repo name).
+
+    Best-effort by design: callers that require a private manifest should
+    treat ``None`` as their own failure condition.
+    """
+    env = os.environ.get(_PRIVATE_MANIFEST_ENV, "").strip()
+    if env:
+        root = Path(env).expanduser()
+        return root.resolve() if root.is_dir() else None
+    if registry is None:
+        try:
+            registry = Registry.load()
+        except RepoGraphConfigError:
+            return None
+    for root in registry.manifests:
+        root = Path(root).expanduser()
+        if not root.is_dir():
+            continue
+        yamls = discover_all_manifest_yamls(root)
+        if any(y.name.startswith(_PRIVATE_MANIFEST_PREFIX) for y in yamls):
+            return root.resolve()
+    return None
 
 
 def iter_yaml_documents(paths: Iterable[Path]) -> list[tuple[Path, dict]]:

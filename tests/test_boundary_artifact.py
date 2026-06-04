@@ -36,7 +36,7 @@ def test_boundary_artifact_forbids_private_names_but_not_public_aliases() -> Non
     )
     artifact = build_boundary_artifact(
         graph,
-        source_graph_id="PrivateManifest",
+        source_graph_id="private-manifest-fixture",
         source_ref_or_commit="abc123",
     )
     assert artifact.schema_kind == "boundary_artifact"
