@@ -107,3 +107,4 @@ class EntityKind(str, Enum):
     REDACTION_RULE = "RedactionRule"
     MIRROR_RELATIONSHIP = "MirrorRelationship"
     SUPERSET_RELATIONSHIP = "SupersetRelationship"
+    CAPABILITY = "Capability"

@@ -1,4 +1,27 @@
 # Log
+## 2026-06-15 — Capability registry: schema + read-model projection
+
+Added the fleet capability plane as a graph-native module (`src/repograph/capabilities/`):
+capabilities are first-class nodes with typed edges (owns/targets/executes/requires/
+validates/produces). Ergonomic flat authoring fields compile to the canonical node+edge
+graph — the graph is the truth, the fields are sugar.
+
+- `SchemaKind.CAPABILITIES` @ 1.0.0; `EntityKind.CAPABILITY`; "Capability" added to the
+  public_safe/public_docs projection entity kinds; `project_capability_registry` drops
+  non-public capabilities; `to_payload()` gives a deterministic hash for boundary coverage.
+- Invariants: exactly one `owns` edge per capability (accountability is one, participation
+  is many); `target_scope` in {repo (resolves), repo_set (selector validated, membership NOT
+  expanded), fleet (no id/selector)}; risk >= mutates_fleet requires an explicit
+  preferred_lane; unknown enums fail closed. Repo stays import-free of the fleet:
+  `invocation.ref` is opaque, resolved later by Custodian (the CAP1 detector, separate PR).
+- Tests: `tests/test_capability_registry.py`. Honoured the repo's "genuine tests over
+  over-excluding" preference — T1/T6 satisfied by direct-import per-symbol tests; only T7
+  excluded for `capabilities/**` (this repo uses a flat tests/ layout; no parallel-file
+  tree exists for any subpackage).
+- Genericised the illustrative example off a private-repo name to the neutral `MediaForge`
+  placeholder (B1 boundary).
+- 98 tests pass; `custodian-multi` clean (0 findings).
+
 ## 2026-06-04 — Console reconciliation: scrub + enforce
 
 Reconciled `.console/` per the console-reconciliation spec (scrub-target boundary, I2).

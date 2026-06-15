@@ -56,6 +56,10 @@ audit:
       - "src/repograph/schema/**"
       - "src/repograph/topography/**"
       - "src/repograph/topology/**"
+      # T7 expects tests/unit/repograph/capabilities/test_*.py; this repo uses a
+      # flat tests/ layout (no parallel-file tree exists for any subpackage).
+      # T1/T6 are satisfied by genuine direct-import tests, not excluded.
+      - "src/repograph/capabilities/**"
       - "src/repograph/diff.py"
       - "src/repograph/errors.py"
 

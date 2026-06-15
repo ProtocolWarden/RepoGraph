@@ -22,6 +22,7 @@ CURRENT_SCHEMA_VERSIONS: dict[SchemaKind, SchemaVersion] = {
     SchemaKind.TOPOLOGY: SchemaVersion(SchemaKind.TOPOLOGY, "1.0.0"),
     SchemaKind.PROJECTION: SchemaVersion(SchemaKind.PROJECTION, "1.0.0"),
     SchemaKind.BOUNDARY_ARTIFACT: SchemaVersion(SchemaKind.BOUNDARY_ARTIFACT, "1.0.0"),
+    SchemaKind.CAPABILITIES: SchemaVersion(SchemaKind.CAPABILITIES, "1.0.0"),
 }
 
 
