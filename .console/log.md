@@ -1,4 +1,14 @@
 # Log
+## 2026-06-15 — Capability plane charter (docs)
+
+Added `docs/capability-plane-charter.md` (indexed in docs/README.md) — the
+"LAST" doc from the capability-registry design. States the capability plane is
+**fleet-level** and must NOT be migrated into topology (it's not a RepoNode) or
+execution (not a TeamExecutor lane / CoreRunner job / OC task); OC/SwitchBoard/
+CoreRunner are consumers, not owners. Restates the four load-bearing invariants
+(one owns edge; invocation.ref resolves via Custodian CAP1; target_scope
+trichotomy; risk gates a lane) and the language/instances/reality-check layering.
+
 ## 2026-06-15 — Capability registry: schema + read-model projection
 
 Added the fleet capability plane as a graph-native module (`src/repograph/capabilities/`):
