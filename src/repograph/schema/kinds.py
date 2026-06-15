@@ -12,6 +12,7 @@ class SchemaKind(str, Enum):
     TOPOLOGY = "topology"
     PROJECTION = "projection"
     BOUNDARY_ARTIFACT = "boundary_artifact"
+    CAPABILITIES = "capabilities"
 
 
 class CompatibilityPolicy(str, Enum):

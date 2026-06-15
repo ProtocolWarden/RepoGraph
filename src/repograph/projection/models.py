@@ -62,7 +62,7 @@ class ProjectionProfile:
 
 DEFAULT_PROJECTION_PROFILE_RULES: dict[ProjectionProfileKind, ProjectionProfileRules] = {
     ProjectionProfileKind.PUBLIC_SAFE: ProjectionProfileRules(
-        allowed_entity_kinds=("Repository", "Project", "Manifest"),
+        allowed_entity_kinds=("Repository", "Project", "Manifest", "Capability"),
         allowed_edge_kinds=("consumes_manifest", "publishes_projection", "reads_artifact", "writes_artifact", "deploys", "hosts"),
         allowed_fields=("canonical_name", "visibility", "projection_behavior", "public_alias", "github_url", "description", "owner", "scope", "runtime_role", "kind", "metadata"),
         redaction_rules=("hide_private_names", "hide_local_paths", "drop_secret_refs", "collapse_private_entities"),
@@ -71,7 +71,7 @@ DEFAULT_PROJECTION_PROFILE_RULES: dict[ProjectionProfileKind, ProjectionProfileR
         output_safety_class="public_safe",
     ),
     ProjectionProfileKind.PUBLIC_DOCS: ProjectionProfileRules(
-        allowed_entity_kinds=("Repository", "Project", "Manifest"),
+        allowed_entity_kinds=("Repository", "Project", "Manifest", "Capability"),
         allowed_edge_kinds=("consumes_manifest", "publishes_projection", "reads_artifact", "writes_artifact", "deploys", "hosts"),
         allowed_fields=("canonical_name", "visibility", "projection_behavior", "public_alias", "github_url", "description", "owner", "scope", "runtime_role", "kind", "metadata"),
         redaction_rules=("hide_private_names", "hide_local_paths", "drop_secret_refs"),
