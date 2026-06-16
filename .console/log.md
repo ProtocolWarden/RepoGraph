@@ -1,4 +1,13 @@
 # Log
+## 2026-06-16 — Opt into CAP1 enforcement (repo_graph_projection)
+
+Added `audit.capabilities.enforce: true` so Custodian's CAP1 verifies the
+capability RepoGraph owns (`repo_graph_projection` → cli `repograph`) resolves
+here. Registry located via the existing `cross_repo.platform_manifest_repo`
+sibling. Enforced by PlatformManifest's capability-refs gate (RepoGraph added to
+its owning set) + this repo's pre-push. Negative control: breaking the ref fails
+CAP1 here.
+
 ## 2026-06-15 — Capability plane charter (docs)
 
 Added `docs/capability-plane-charter.md` (indexed in docs/README.md) — the
