@@ -5,6 +5,11 @@ tests_root: tests
 audit:
   reconcile_enforce: true
 
+  # CAP1 — enforce that capabilities owned by RepoGraph (repo_graph_projection)
+  # resolve here. Registry is located via the existing cross_repo sibling below.
+  capabilities:
+    enforce: true
+
   cross_repo:
     platform_manifest_repo: ../PlatformManifest
 
